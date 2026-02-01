@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+void main() => runApp(const MyApp());
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -7,7 +8,6 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
       debugShowCheckedModeBanner: false,
       home: const ExplicitAnimationsPage(),
     );
@@ -23,30 +23,35 @@ class ExplicitAnimationsPage extends StatefulWidget {
 
 class _ExplicitAnimationsPageState extends State<ExplicitAnimationsPage>
     with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
-  late final Animation<double> _yOffset;
-  late final Animation<double> _scale;
+  late AnimationController _controller;
+  late Animation<double> _widthAnimation;
+  late Animation<double> _heightAnimation;
+  late Animation<Color?> _colorAnimation;
+  late Animation<BorderRadius?> _borderRadiusAnimation; 
 
   @override
   void initState() {
     super.initState();
-
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 900),
+      duration: const Duration(seconds: 2),
+    )..repeat(reverse: true);
+
+    _widthAnimation = Tween<double>(begin: 100.0, end: 250.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
     );
-
-    final curved = CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeInOutQuad,
+    _heightAnimation = Tween<double>(begin: 100.0, end: 150.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
     );
-
-    _yOffset = Tween<double>(
-      begin: 0,
-      end: 100,
-    ).animate(_controller);
-
-    _scale = Tween<double>(begin: 1.0, end: 3.0).animate(curved);
+    _colorAnimation = ColorTween(begin: Colors.blue, end: Colors.red).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+    _borderRadiusAnimation = BorderRadiusTween(
+      begin: BorderRadius.circular(10),
+      end: BorderRadius.circular(75),
+    ).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
   }
 
   @override
@@ -55,78 +60,59 @@ class _ExplicitAnimationsPageState extends State<ExplicitAnimationsPage>
     super.dispose();
   }
 
-  void _start() {
-    if (_controller.status == AnimationStatus.completed) {
-      _controller.reset();
-    }
-    _controller.forward();
-  }
-
-  void _stop() => _controller.stop();
-
-  void _reverse() => _controller.reverse();
-
-  void _repeat() => _controller.repeat(reverse: true);
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Explicit Animations')),
-      body: Column(
-        children: [
-          Expanded(
-            child: Center(
-              child: AnimatedBuilder(
-                animation: _controller,
-                child: Container(
-                  width: 120,
-                  height: 120,
-                  decoration: BoxDecoration(
-                    color: Colors.blue,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                ),
-                builder: (context, child) {
-                  //log("$_yOffset", name: "YOffset");
-                  return Transform.translate(
-                    offset: Offset(0.0, 0.0 ),
-                    child: Transform.rotate(
-                      angle: _yOffset.value ,
-                      child: Transform.scale(
-                        scale: _scale.value,
-                        child: child,
-                      ),
-                    ),
-                  );
-                },
+      appBar: AppBar(title: const Text("Animation Full Control")),
+      body: Center( 
+        child: AnimatedBuilder(
+          animation: _controller,
+          builder: (context, child) {
+            return Container(
+              width: _widthAnimation.value,
+              height: _heightAnimation.value,
+              decoration: BoxDecoration(
+                color: _colorAnimation.value,
+                borderRadius: _borderRadiusAnimation.value,
               ),
-            ),
+              alignment: Alignment.center,
+              child: const Text(
+                "BOX",
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+              ),
+            );
+          },
+        ),
+      ),
+      floatingActionButton: Wrap(
+        direction: Axis.vertical,
+        spacing: 10,
+        children: [
+          FloatingActionButton.extended(
+            heroTag: "forward",
+            onPressed: () => _controller.forward(),
+            label: const Text("Forward"),
+            icon: const Icon(Icons.arrow_forward),
           ),
-          Wrap(
-            children: [
-            Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                ElevatedButton(onPressed: _start, child: const Text('Start')),
-                ElevatedButton(onPressed: _stop, child: const Text('Stop')),
-                ElevatedButton(
-                  onPressed: _reverse,
-                  child: const Text('Reverse'),
-                ),
-                Container(
-                  height: 40,
-                  width: 40, 
-              child: 
-                ElevatedButton(
-                  onPressed: _repeat,
-                  child: const Text('Repeat'),)
-                ),
-              ],
-            ),
-          ),],
-          )
+          FloatingActionButton.extended(
+            heroTag: "reverse",
+            onPressed: () => _controller.reverse(),
+            label: const Text("Reverse"),
+            icon: const Icon(Icons.arrow_back),
+          ),
+          FloatingActionButton.extended(
+            heroTag: "repeat",
+            onPressed: () => _controller.repeat(reverse: true),
+            label: const Text("Repeat"),
+            icon: const Icon(Icons.replay),
+          ),
+          FloatingActionButton.extended(
+            backgroundColor: Colors.redAccent,
+            heroTag: "stop",
+            onPressed: () => _controller.stop(),
+            label: const Text("Stop"),
+            icon: const Icon(Icons.stop),
+          ),
         ],
       ),
     );
